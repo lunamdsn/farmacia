@@ -1,0 +1,106 @@
+import heapq
+from itertools import permutations
+
+grafo = {
+    "S": {"A": 5, "B": 4, "C": 2},
+    "A": {"S": 5, "G": 9},
+    "B": {"S": 4, "I": 3, "C": 1, "D": 5},
+    "C": {"S": 2, "B": 1, "Q": 4, "D": 8, "E": 10, "P": 21},
+    "G": {"A": 9},
+    "I": {"B": 3, "F": 7},
+    "D": {"B": 5, "C": 8, "O": 13, "E": 2, "T": 6},
+    "Q": {"C": 4, "O": 7},
+    "O": {"Q": 7, "D": 13},
+    "F": {"I": 7, "P": 12},
+    "P": {"F": 12, "C": 21},
+    "E": {"C": 10, "D": 2, "T": 2, "L": 7},
+    "T": {"D": 6, "E": 2, "J": 9},
+    "J": {"T": 9},
+    "L": {"E": 7},}
+
+def dijkstra(inicio):
+    distancias = {nodo: float("inf") for nodo in grafo}
+    anteriores = {nodo: None for nodo in grafo}
+    distancias[inicio] = 0
+    cola = [(0, inicio)]
+    while cola:
+        distancia, nodo = heapq.heappop(cola)
+        if distancia > distancias[nodo]:
+            continue
+        for vecino, peso in grafo[nodo].items():
+            nueva = distancia + peso
+            if nueva < distancias[vecino]:
+                distancias[vecino] = nueva
+                anteriores[vecino] = nodo
+                heapq.heappush(cola, (nueva, vecino))
+    return distancias, anteriores
+
+def camino(anteriores, inicio, fin):
+    ruta = []
+    nodo = fin
+    while nodo is not None:
+        ruta.append(nodo)
+        nodo = anteriores[nodo]
+    ruta.reverse()
+    if ruta[0] != inicio:
+        return []
+    return ruta
+
+
+farmacias = {
+    "B": {"chicles", "antipsicoticos", "vendas"},
+    "C": {"supositorios", "aspirinas", "antitusivo"},
+    "F": {"chicles", "vendas", "supositorios", "antitusivo"},
+    "T": {"antipsicoticos", "aspirinas", "antitusivo"}}
+
+pedidos = {
+    1: ({"antitusivo", "chicles"}, "T"),
+    2: ({"supositorios", "vendas"}, "E"),
+    3: ({"antipsicoticos", "aspirinas"}, "D")}
+
+farmacia_pedido = {}
+
+for numero, (productos, cliente) in pedidos.items():
+    for farmacia, productos_farmacia in farmacias.items():
+        if productos.issubset(productos_farmacia):
+            farmacia_pedido[numero] = farmacia
+            break
+
+sitios = ["S", "F", "E", "T", "D"]
+
+distancias = {}
+caminos = {}
+
+for origen in sitios:
+    d, anteriores = dijkstra(origen)
+    distancias[origen] = d
+    caminos[origen] = {}
+    for destino in sitios:
+        caminos[origen][destino] = camino(
+            anteriores, origen, destino)
+
+
+def coste_orden(orden):
+    actual = "S"
+    coste = 0
+    for siguiente in orden:
+        coste += distancias[actual][siguiente]
+        actual = siguiente
+    return coste
+
+mejor_coste = float("inf")
+mejor_orden = None
+
+for orden in permutations(["F", "E", "T", "D"]):
+    if orden.index("F") > orden.index("T"):
+        continue
+    if orden.index("T") > orden.index("D"):
+        continue
+    coste = coste_orden(orden)
+    if coste < mejor_coste:
+        mejor_coste = coste
+        mejor_orden = orden
+
+print("Farmacias:", farmacia_pedido)
+print("Mejor orden:", " -> ".join(("S",) + mejor_orden))
+print("Coste:", mejor_coste)
